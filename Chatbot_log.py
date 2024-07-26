@@ -5,7 +5,7 @@ from langchain_core.tracers.run_collector import RunCollectorCallbackHandler
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain.callbacks.base import BaseCallbackHandler
-from langchain.schema import ChatMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langsmith import Client
 import streamlit as st
@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 st.set_page_config(page_title="ChatBot with LangSmith", page_icon="🤖")
-st.title("🤖 ChatBot 로그 확인하기")
+st.title("🤖OPENAI API 챗봇")
 
 # LangSmith 환경 변수 설정
 os.environ["OPENAI_API_KEY"] = st.secrets["OPENAI_API_KEY"]
@@ -60,13 +60,13 @@ if reset_history:
 
 # 채팅이 비어있으면 초기 메시지 추가
 if len(st.session_state.messages) == 0:
-    initial_message = ChatMessage(role="assistant", content="무엇을 도와드릴까요?")
+    initial_message = AIMessage(content="무엇을 도와드릴까요?")
     st.session_state.messages.append(initial_message)
     msgs.add_ai_message("무엇을 도와드릴까요?")
 
 # 채팅 기록 표시
 for msg in st.session_state.messages:
-    st.chat_message(msg.role).write(msg.content)
+    st.chat_message(msg.type).write(msg.content)
 
 # 프롬프트 템플릿 설정
 prompt = ChatPromptTemplate.from_messages(
@@ -79,9 +79,10 @@ prompt = ChatPromptTemplate.from_messages(
 
 # 사용자 입력 처리
 if user_input := st.chat_input():
-    st.session_state.messages.append(ChatMessage(role="user", content=user_input))
-    st.chat_message("user").write(user_input)
-    with st.chat_message("assistant"):
+    st.session_state.messages.append(HumanMessage(content=user_input))
+    msgs.add_user_message(user_input)
+    st.chat_message("human").write(user_input)
+    with st.chat_message("ai"):
         stream_handler = StreamHandler(st.empty())
         llm = ChatOpenAI(streaming=True, callbacks=[stream_handler])
         chain = prompt | llm
@@ -92,9 +93,8 @@ if user_input := st.chat_input():
             history_messages_key="history",
         )
         response = chain_with_history.invoke({"question": user_input}, cfg)
-        st.session_state.messages.append(
-            ChatMessage(role="assistant", content=response.content)
-        )
+        st.session_state.messages.append(AIMessage(content=response.content))
+        msgs.add_ai_message(response.content)
     st.session_state.last_run = run_collector.traced_runs[0].id
 
 # LangSmith 실행 URL 가져오기
@@ -125,5 +125,5 @@ if st.session_state.get("last_run"):
 # 사이드바에 추가 정보
 with st.sidebar:
     "[신한카드](https://www.shinhancard.com)"
-    "[View the source code](https://github.com/streamlit/llm-examples/blob/main/Chatbot.py)"
+    "[View the source code](https://github.com/jungh5/chat_start/blob/main/Chatbot_log.py)"
     "[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/streamlit/llm-examples?quickstart=1)"
