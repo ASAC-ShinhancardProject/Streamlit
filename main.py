@@ -22,11 +22,11 @@ from PIL import Image
 load_dotenv()
 
 # API 키 설정
-# openai_api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
+openai_api_key = st.secrets.get("OPENAI_API_KEY") or os.getenv("OPENAI_API_KEY")
 
 # OpenAI 설정
-# client = OpenAI(api_key=openai_api_key)
-client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+client = OpenAI(api_key=openai_api_key)
+
 # Streamlit 앱 설정
 st.set_page_config(page_title="집코기", page_icon=Image.open("챗봇.png"), layout="wide")
 
